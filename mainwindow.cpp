@@ -205,7 +205,55 @@ qreal MainWindow::frameAssessmentPSNR(QImage &basic, QImage &compressed) {
 }
 
 qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
-    return 0.;
+    //return 0.;
+    size_t height = qMin(basic.height(), compressed.height());
+    size_t width = qMin(basic.width(), compressed.width());
+    size_t size = height * width;
+
+    //Mid values
+    qreal basicMid = 0.;
+    qreal compressedMid = 0.;
+    for (size_t h = 0; h < height; h++) {
+        for (size_t w = 0; w < width; w++) {
+            QRgb basicPixel = basic.pixel(w, h);
+            QRgb compressedPixel = compressed.pixel(w, h);
+
+            basicMid += (qreal) getIntensity(basicPixel);
+            compressedMid += (qreal) getIntensity(compressedPixel);
+        }
+    }
+    basicMid /= (qreal) size;
+    compressedMid /= (qreal) size;
+
+    qreal basicDisp = 0.;
+    qreal compressedDisp = 0.;
+    qreal cov = 0.;
+
+    for (size_t h = 0; h < height; h++) {
+        for (size_t w = 0; w < width; w++) {
+            QRgb basicPixel = basic.pixel(w, h);
+            QRgb compressedPixel = compressed.pixel(w, h);
+
+            basicDisp += qPow((qreal) getIntensity(basicPixel) - basicMid, 2.);
+            compressedDisp += qPow((qreal) getIntensity(compressedPixel) - compressedMid, 2.);
+            cov += ((qreal) getIntensity(basicPixel) - basicMid) *
+                    ((qreal) getIntensity(compressedPixel) - compressedMid);
+        }
+    }
+
+    basicDisp /= ((qreal) size - 1.);
+    compressedDisp /= ((qreal) size - 1.);
+    cov /= ((qreal) size - 1.);
+
+    const qreal c1 = 255. * .01;
+    const qreal c2 = 255. * .03;
+
+    qreal basicMidSq = basicMid * basicMid;
+    qreal compressedMidSq = compressedMid * compressedMid;
+
+    return ((2 * basicMid * compressedMid + c1) * (2 * cov + c2)) /
+            ((basicMidSq + compressedMidSq + c1) * (basicDisp + compressedDisp + c2));
+
 }
 
 QString MainWindow::getFrameAssessmentValue(size_t currTime) {
