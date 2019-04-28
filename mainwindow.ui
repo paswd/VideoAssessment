@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>353</width>
-    <height>421</height>
+    <height>463</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -161,7 +161,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>380</y>
+      <y>420</y>
       <width>331</width>
       <height>31</height>
      </rect>
@@ -227,6 +227,22 @@
     </property>
     <property name="text">
      <string>Сохранить результат в</string>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="progressBar">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>380</y>
+      <width>331</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>0</number>
     </property>
    </widget>
   </widget>

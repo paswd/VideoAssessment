@@ -21,6 +21,8 @@ All rights reserved
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QImage>
+#include <QRgb>
 
 namespace Ui {
 class MainWindow;
@@ -34,8 +36,24 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    bool isAnyMethodSelected();
+
     QString getVideoFrameCommand(QString fileIn, QString fileOut, QString timestamp);
+    qreal getIntensity(QRgb pixel);
+
     void generateTempFrameFiles(size_t currTime);
+    void removeTempFrameFiles();
+
+    qreal pixelDiff(QRgb a, QRgb b);
+
+    int getProgressValue(size_t value, size_t maxValue);
+
+    qreal frameAssessmentMathExpecting(QImage &basic, QImage &compressed);
+    qreal frameAssessmentSup(QImage &basic, QImage &compressed);
+    qreal frameAssessmentPSNR(QImage &basic, QImage &compressed);
+    qreal frameAssessmentSSIM(QImage &basic, QImage &compressed);
+
+    QString getFrameAssessmentValue(size_t currTime);
     QString getCSVOutputData();
 
 private slots:
