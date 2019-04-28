@@ -35,7 +35,7 @@ const QString COL_SEPARATOR                 = ";";
 const QString ROW_SEPARATOR                 = "\n";
 const QString DOUBLE_NUM_SEPARATOR          = ",";
 
-const QString SUPPORTED_FILE_TYPES          = "*.avi *.mp4 *.mkv *.flv *.gif";
+const QString SUPPORTED_FILE_TYPES          = "*.avi *.mp4 *.mkv *.flv";
 
 const QString TMP_IMAGE_BASIC_FILENAME      = "basicFrame.bmp";
 const QString TMP_IMAGE_COMPRESSED_FILENAME = "compressedFrame.bmp";
