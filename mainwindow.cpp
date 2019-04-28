@@ -17,11 +17,6 @@ https://github.com/paswd/VideoAssessment
 All rights reserved
 */
 
-//Before starting install packages:
-// * libavcodec-dev
-// * libavformat-dev
-// * libswscale-dev
-
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <algorithm>
@@ -36,15 +31,11 @@ All rights reserved
 #include <QRgb>
 #include <QColor>
 
-/*extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-}*/
-
 const QString COL_SEPARATOR                 = ";";
 const QString ROW_SEPARATOR                 = "\n";
 const QString DOUBLE_NUM_SEPARATOR          = ",";
+
+const QString SUPPORTED_FILE_TYPES          = "*.avi *.mp4 *.mkv *.flv *.gif";
 
 const QString TMP_IMAGE_BASIC_FILENAME      = "basicFrame.bmp";
 const QString TMP_IMAGE_COMPRESSED_FILENAME = "compressedFrame.bmp";
@@ -54,7 +45,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    //av_register_all();
 }
 
 MainWindow::~MainWindow()
@@ -124,7 +114,7 @@ void MainWindow::generateTempFrameFiles(size_t currTime) {
             TMP_IMAGE_BASIC_FILENAME, currTimeStr);
     QString getFrameCompressedCmd = getVideoFrameCommand(ui->compressedVideoFilePath->text(),
             TMP_IMAGE_COMPRESSED_FILENAME, currTimeStr);
-    //ui->videoLength->setText(getFrameCompressedCmd);
+
     system(qPrintable(getFrameBasicCmd));
     system(qPrintable(getFrameCompressedCmd));
 }
@@ -152,10 +142,7 @@ qreal MainWindow::frameAssessmentMathExpecting(QImage &basic, QImage &compressed
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
-            //summDiff += getIntensity(basicPixel) - getIntensity(compressedPixel);
             summDiff += pixelDiff(basicPixel, compressedPixel);
-
-            //ui->progressBar->setValue(getProgressValue(h * width + w, height * width));
         }
     }
 
@@ -172,11 +159,8 @@ qreal MainWindow::frameAssessmentSup(QImage &basic, QImage &compressed) {
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
-            //summDiff += getIntensity(basicPixel) - getIntensity(compressedPixel);
             qreal currDiff = pixelDiff(basicPixel, compressedPixel);
             maxDiff = (currDiff > maxDiff ? currDiff : maxDiff);
-
-            //ui->progressBar->setValue(getProgressValue(h * width + w, height * width));
         }
     }
     return maxDiff;
@@ -192,11 +176,8 @@ qreal MainWindow::frameAssessmentPSNR(QImage &basic, QImage &compressed) {
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
-            //summDiff += getIntensity(basicPixel) - getIntensity(compressedPixel);
             qreal currDiff = pixelDiff(basicPixel, compressedPixel);
             summSqrDiff += currDiff * currDiff;
-
-            //ui->progressBar->setValue(getProgressValue(h * width + w, height * width));
         }
     }
 
@@ -225,6 +206,7 @@ qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
     basicMid /= (qreal) size;
     compressedMid /= (qreal) size;
 
+    //Dispersion & covariance
     qreal basicDisp = 0.;
     qreal compressedDisp = 0.;
     qreal cov = 0.;
@@ -258,15 +240,12 @@ qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
 
 QString MainWindow::getFrameAssessmentValue(size_t currTime) {
     generateTempFrameFiles(currTime);
-    //QPixmap basicPicture(TMP_IMAGE_BASIC_FILENAME);
-    //QPixmap compressedPicture(TMP_IMAGE_COMPRESSED_FILENAME);
     QImage basicPicture;
     QImage compressedPicture;
     basicPicture.load(TMP_IMAGE_BASIC_FILENAME);
     compressedPicture.load(TMP_IMAGE_COMPRESSED_FILENAME);
 
     if (ui->selectedMethodMathExpecting->isChecked()) {
-        //return frameAssessmentMathExpecting();
         QString val = QString::number(frameAssessmentMathExpecting(basicPicture, compressedPicture));
         val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
@@ -274,7 +253,6 @@ QString MainWindow::getFrameAssessmentValue(size_t currTime) {
     }
 
     if (ui->selectedMethodSup->isChecked()) {
-        //return frameAssessmentSup();
         QString val = QString::number(frameAssessmentSup(basicPicture, compressedPicture));
         val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
@@ -282,7 +260,6 @@ QString MainWindow::getFrameAssessmentValue(size_t currTime) {
     }
 
     if (ui->selectedMethodPSNR->isChecked()) {
-        //return frameAssessmentPSNR();
         QString val = QString::number(frameAssessmentPSNR(basicPicture, compressedPicture));
         val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
@@ -290,7 +267,6 @@ QString MainWindow::getFrameAssessmentValue(size_t currTime) {
     }
 
     if (ui->selectedMethodSSIM->isChecked()) {
-        //return frameAssessmentSSIM();
         QString val = QString::number(frameAssessmentSSIM(basicPicture, compressedPicture));
         val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
@@ -312,13 +288,13 @@ QString MainWindow::getCSVOutputData() {
 
 void MainWindow::on_basicVideoFileSelectBtn_clicked()
 {
-    QString filePath = QFileDialog::getOpenFileName(0, "Open", "", "*.avi");
+    QString filePath = QFileDialog::getOpenFileName(0, "Open", "", SUPPORTED_FILE_TYPES);
     ui->basicVideoFilePath->setText(filePath);
 }
 
 void MainWindow::on_compressedVideoFileSelectBtn_2_clicked()
 {
-    QString filePath = QFileDialog::getOpenFileName(0, "Open", "", "*.avi");
+    QString filePath = QFileDialog::getOpenFileName(0, "Open", "", SUPPORTED_FILE_TYPES);
     ui->compressedVideoFilePath->setText(filePath);
 }
 
@@ -329,7 +305,6 @@ void MainWindow::on_calculate_clicked()
         return;
     }
     setEditableElementsDisabled(true);
-    //ui->progressBar->setEnabled(true);
     ui->progressBar->setValue(0);
     //setCursor(Qt::WaitCursor);
     QFile fout(ui->resultSavePath->text());
@@ -349,8 +324,6 @@ void MainWindow::on_calculate_clicked()
 
 void MainWindow::on_resultSaveSelectBtn_clicked()
 {
-    //QString filePath = QFileDialog::getOpenFileName(0, "Save", "", "*.bmp");
     QString filePath = QFileDialog::getSaveFileName(0, "Save", "result.csv", "*.csv");
-    //ui->compressedVideoFilePath->setText(filePath);
     ui->resultSavePath->setText(filePath);
 }
