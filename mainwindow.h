@@ -36,6 +36,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void setEditableElementsDisabled(bool disabled);
     bool isAnyMethodSelected();
 
     QString getVideoFrameCommand(QString fileIn, QString fileOut, QString timestamp);

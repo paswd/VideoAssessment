@@ -42,10 +42,11 @@ All rights reserved
 #include <libswscale/swscale.h>
 }*/
 
-const QString COL_SEPARATOR = ";";
-const QString ROW_SEPARATOR = "\n";
+const QString COL_SEPARATOR                 = ";";
+const QString ROW_SEPARATOR                 = "\n";
+const QString DOUBLE_NUM_SEPARATOR          = ",";
 
-const QString TMP_IMAGE_BASIC_FILENAME = "basicFrame.bmp";
+const QString TMP_IMAGE_BASIC_FILENAME      = "basicFrame.bmp";
 const QString TMP_IMAGE_COMPRESSED_FILENAME = "compressedFrame.bmp";
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -59,6 +60,26 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setEditableElementsDisabled(bool disabled) {
+    //Buttons
+    ui->calculate->setDisabled(disabled);
+    ui->basicVideoFileSelectBtn->setDisabled(disabled);
+    ui->compressedVideoFileSelectBtn_2->setDisabled(disabled);
+    ui->resultSaveSelectBtn->setDisabled(disabled);
+
+    //Text areas
+    ui->basicVideoFilePath->setDisabled(disabled);
+    ui->compressedVideoFilePath->setDisabled(disabled);
+    ui->resultSavePath->setDisabled(disabled);
+    ui->videoLength->setDisabled(disabled);
+
+    //Radio buttons
+    ui->selectedMethodMathExpecting->setDisabled(disabled);
+    ui->selectedMethodSup->setDisabled(disabled);
+    ui->selectedMethodPSNR->setDisabled(disabled);
+    ui->selectedMethodSSIM->setDisabled(disabled);
 }
 
 bool MainWindow::isAnyMethodSelected() {
@@ -82,7 +103,7 @@ QString MainWindow::getVideoFrameCommand(QString fileIn, QString fileOut, QStrin
     fileOut.replace(" ", "\\ ");
 
     return "ffmpeg -ss " + timestamp + " -i " +
-            fileIn + " -vframes 1 -q:v 2 /home/paswd/logs/" +
+            fileIn + " -vframes 1 -q:v 2 " +
             fileOut + " -y -loglevel quiet";
 }
 
@@ -191,42 +212,48 @@ QString MainWindow::getFrameAssessmentValue(size_t currTime) {
     generateTempFrameFiles(currTime);
     //QPixmap basicPicture(TMP_IMAGE_BASIC_FILENAME);
     //QPixmap compressedPicture(TMP_IMAGE_COMPRESSED_FILENAME);
-    QImage basicPicture(TMP_IMAGE_BASIC_FILENAME);
-    QImage compressedPicture(TMP_IMAGE_COMPRESSED_FILENAME);
+    QImage basicPicture;
+    QImage compressedPicture;
+    basicPicture.load(TMP_IMAGE_BASIC_FILENAME);
+    compressedPicture.load(TMP_IMAGE_COMPRESSED_FILENAME);
 
     if (ui->selectedMethodMathExpecting->isChecked()) {
         //return frameAssessmentMathExpecting();
-        return QString::number(currTime) + "," +
-                QString::number(frameAssessmentMathExpecting(basicPicture, compressedPicture))
-                + "\n";
+        QString val = QString::number(frameAssessmentMathExpecting(basicPicture, compressedPicture));
+        val.replace(".", DOUBLE_NUM_SEPARATOR);
+        return QString::number(currTime) + COL_SEPARATOR +
+                val + ROW_SEPARATOR;
     }
 
     if (ui->selectedMethodSup->isChecked()) {
         //return frameAssessmentSup();
+        QString val = QString::number(frameAssessmentSup(basicPicture, compressedPicture));
+        val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
-                QString::number(frameAssessmentSup(basicPicture, compressedPicture))
-                + ROW_SEPARATOR;
+                val + ROW_SEPARATOR;
     }
 
     if (ui->selectedMethodPSNR->isChecked()) {
         //return frameAssessmentPSNR();
+        QString val = QString::number(frameAssessmentPSNR(basicPicture, compressedPicture));
+        val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
-                QString::number(frameAssessmentPSNR(basicPicture, compressedPicture))
-                + ROW_SEPARATOR;
+                val + ROW_SEPARATOR;
     }
 
     if (ui->selectedMethodSSIM->isChecked()) {
         //return frameAssessmentSSIM();
+        QString val = QString::number(frameAssessmentSSIM(basicPicture, compressedPicture));
+        val.replace(".", DOUBLE_NUM_SEPARATOR);
         return QString::number(currTime) + COL_SEPARATOR +
-                QString::number(frameAssessmentSSIM(basicPicture, compressedPicture))
-                + ROW_SEPARATOR;
+                val + ROW_SEPARATOR;
     }
     return "";
 }
 
 QString MainWindow::getCSVOutputData() {
     size_t videoLength = ui->videoLength->text().toInt();
-    QString res = "Second" + COL_SEPARATOR + "Value" + ROW_SEPARATOR;
+    QString res = "Time" + COL_SEPARATOR + "Value" + ROW_SEPARATOR;
     for (size_t currTime = 0; currTime < videoLength; currTime++) {
         res += getFrameAssessmentValue(currTime);
         ui->progressBar->setValue(getProgressValue(currTime, videoLength));
@@ -253,31 +280,23 @@ void MainWindow::on_calculate_clicked()
         QMessageBox::about(this, "Status", "No method selected");
         return;
     }
-    ui->calculate->setDisabled(true);
-    ui->basicVideoFileSelectBtn->setDisabled(true);
-    ui->compressedVideoFileSelectBtn_2->setDisabled(true);
-    ui->resultSaveSelectBtn->setDisabled(true);
+    setEditableElementsDisabled(true);
     //ui->progressBar->setEnabled(true);
     ui->progressBar->setValue(0);
-    setCursor(Qt::WaitCursor);
+    //setCursor(Qt::WaitCursor);
     QFile fout(ui->resultSavePath->text());
 
     if (fout.open(QIODevice::ReadWrite)) {
         QTextStream stream(&fout);
         stream << getCSVOutputData();
-        setCursor(Qt::ArrowCursor);
+        //setCursor(Qt::ArrowCursor);
         ui->progressBar->setValue(100);
         QMessageBox::about(this, "Status", "Successfully completed");
     } else {
-        setCursor(Qt::ArrowCursor);
+        //setCursor(Qt::ArrowCursor);
         QMessageBox::about(this, "Status", "Saving error");
     }
-    ui->progressBar->setValue(0);
-    //ui->progressBar->setEnabled(false);
-    ui->calculate->setDisabled(false);
-    ui->basicVideoFileSelectBtn->setDisabled(false);
-    ui->compressedVideoFileSelectBtn_2->setDisabled(false);
-    ui->resultSaveSelectBtn->setDisabled(false);
+    setEditableElementsDisabled(false);
 }
 
 void MainWindow::on_resultSaveSelectBtn_clicked()
