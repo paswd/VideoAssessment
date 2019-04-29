@@ -40,6 +40,9 @@ const QString SUPPORTED_FILE_TYPES          = "*.avi *.mp4 *.mkv *.flv";
 const QString TMP_IMAGE_BASIC_FILENAME      = "basicFrame.bmp";
 const QString TMP_IMAGE_COMPRESSED_FILENAME = "compressedFrame.bmp";
 
+const size_t SSIM_FRAME_HEIGHT              = 8;
+const size_t SSIM_FRAME_WIDTH               = 8;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -185,17 +188,21 @@ qreal MainWindow::frameAssessmentPSNR(QImage &basic, QImage &compressed) {
     return 20. * (qreal) log10((double) frac);
 }
 
-qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
-    //return 0.;
+qreal MainWindow::ssimCalculateFrame(QImage &basic, QImage &compressed, size_t shiftHeight, size_t shiftWidth) {
     size_t height = qMin(basic.height(), compressed.height());
     size_t width = qMin(basic.width(), compressed.width());
-    size_t size = height * width;
+    //size_t size = height * width;
+    size_t size = SSIM_FRAME_HEIGHT * SSIM_FRAME_WIDTH;
 
     //Mid values
     qreal basicMid = 0.;
     qreal compressedMid = 0.;
-    for (size_t h = 0; h < height; h++) {
-        for (size_t w = 0; w < width; w++) {
+
+    size_t untillHeight = qMin(shiftHeight + SSIM_FRAME_HEIGHT, height);
+    size_t untillWidth = qMin(shiftWidth + SSIM_FRAME_WIDTH, width);
+
+    for (size_t h = shiftHeight; h < untillHeight; h++) {
+        for (size_t w = shiftWidth; w < untillWidth; w++) {
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
@@ -211,8 +218,8 @@ qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
     qreal compressedDisp = 0.;
     qreal cov = 0.;
 
-    for (size_t h = 0; h < height; h++) {
-        for (size_t w = 0; w < width; w++) {
+    for (size_t h = shiftHeight; h < untillHeight; h++) {
+        for (size_t w = shiftWidth; w < untillWidth; w++) {
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
@@ -235,7 +242,21 @@ qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
 
     return ((2 * basicMid * compressedMid + c1) * (2 * cov + c2)) /
             ((basicMidSq + compressedMidSq + c1) * (basicDisp + compressedDisp + c2));
+}
 
+qreal MainWindow::frameAssessmentSSIM(QImage &basic, QImage &compressed) {
+    size_t height = qMin(basic.height(), compressed.height());
+    size_t width = qMin(basic.width(), compressed.width());
+
+    qreal summ = 0.;
+
+    for (size_t shiftHeight = 0; shiftHeight < height - SSIM_FRAME_HEIGHT; shiftHeight++) {
+        for (size_t shiftWidth = 0; shiftWidth < width - SSIM_FRAME_WIDTH; shiftWidth++) {
+            summ += ssimCalculateFrame(basic, compressed, shiftWidth, shiftHeight);
+        }
+    }
+
+    return summ / (qreal) ((height - SSIM_FRAME_HEIGHT) * (width - SSIM_FRAME_WIDTH));
 }
 
 QString MainWindow::getFrameAssessmentValue(size_t currTime) {
@@ -307,6 +328,10 @@ void MainWindow::on_calculate_clicked()
     setEditableElementsDisabled(true);
     ui->progressBar->setValue(0);
     //setCursor(Qt::WaitCursor);
+    QString bashSavePath = ui->resultSavePath->text();
+    bashSavePath.replace(" ", "\\ ");
+    system(qPrintable("rm -f " + bashSavePath));
+
     QFile fout(ui->resultSavePath->text());
 
     if (fout.open(QIODevice::ReadWrite)) {

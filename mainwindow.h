@@ -52,6 +52,7 @@ public:
     qreal frameAssessmentMathExpecting(QImage &basic, QImage &compressed);
     qreal frameAssessmentSup(QImage &basic, QImage &compressed);
     qreal frameAssessmentPSNR(QImage &basic, QImage &compressed);
+    qreal ssimCalculateFrame(QImage &basic, QImage &compressed, size_t shiftHeight, size_t shiftWidth);
     qreal frameAssessmentSSIM(QImage &basic, QImage &compressed);
 
     QString getFrameAssessmentValue(size_t currTime);
