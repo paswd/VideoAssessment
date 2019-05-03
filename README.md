@@ -21,9 +21,13 @@
 
 ## Сборка и запуск с помощью bash
 ```bash
+# Сборка
 qmake -project
 qmake
 make
+
+# Запуск
+./VideoAssessment
 ```
 
 ## Особенности работы
