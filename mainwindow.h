@@ -45,6 +45,7 @@ public:
     void generateTempFrameFiles(size_t currTime);
     void removeTempFrameFiles();
 
+    qreal rAbs(qreal v);
     qreal pixelDiff(QRgb a, QRgb b);
 
     int getProgressValue(size_t value, size_t maxValue);

@@ -126,7 +126,12 @@ void MainWindow::removeTempFrameFiles() {
     system(qPrintable("rm " + TMP_IMAGE_COMPRESSED_FILENAME));
 }
 
+qreal MainWindow::rAbs(qreal v) {
+    return (v < 0 ? -v : v);
+}
+
 qreal MainWindow::pixelDiff(QRgb a, QRgb b) {
+
     return getIntensity(a) - getIntensity(b);
 }
 
@@ -179,13 +184,16 @@ qreal MainWindow::frameAssessmentPSNR(QImage &basic, QImage &compressed) {
             QRgb basicPixel = basic.pixel(w, h);
             QRgb compressedPixel = compressed.pixel(w, h);
 
-            qreal currDiff = pixelDiff(basicPixel, compressedPixel);
+            qreal currDiff = rAbs(pixelDiff(basicPixel, compressedPixel));
             summSqrDiff += currDiff * currDiff;
         }
     }
 
-    qreal frac = (255 * height * width) / qSqrt(summSqrDiff);
-    return 20. * (qreal) log10((double) frac);
+    //qreal frac = (255. * (qreal) (height * width)) / qSqrt(summSqrDiff);
+    //return 20. * (qreal) log10((double) frac);
+    qreal mse = summSqrDiff / ((qreal) height * width);
+    qreal frac = 255. / qSqrt(mse);
+    return 20. * ((qreal) log10((double) frac));
 }
 
 qreal MainWindow::ssimCalculateFrame(QImage &basic, QImage &compressed, size_t shiftHeight, size_t shiftWidth) {
